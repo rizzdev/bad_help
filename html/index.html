@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>BLRP Help</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="js/jquery-3.5.1.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script src="../config.js" type="module"></script>
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/roboto.css" rel="stylesheet">
+    <link href="css/main.css" rel="stylesheet">
+</head>
+<body>
+
+
+<div id="content" class="container">
+    <div class="nav-buttons"></div>
+    <div class="pages">
+        <div class="row" id="page-contents"></div>
+    </div>
+</div>
+
+<script type="module">
+
+    import config from './../config.js'
+
+    let interfaceShowing = false;
+
+    function showInterface() {
+        createPages();
+        parseConfig();
+        interfaceShowing = true;
+        $('body').show();
+    }
+
+    function createPages() {
+        for(const page of config.pages) {
+            if(!page.enabled) continue
+            addPage(page.title.replace(/\s/g, '_'), page.title, page.contents)
+        }
+
+        // Set first page
+        let identifier = config.pages[0].title.replace(/\s/g, '_')
+        $(`#tab-${identifier}`).trigger('click')
+    }
+
+    let hotkey_template = `
+        <div class="col-sm must-scroll" id="commands-list"></div>
+        <div class="col-sm must-scroll" id="hotkey-list"></div>`
+
+    let contact_template = `
+<div class="contact-us">
+    <form>
+      <div id="error" class="text text-danger"></div>
+      <div id="success" class="text text-success"></div>
+      <div class="form-group">
+        <label for="input_title">Title</label>
+        <input type="text" class="form-control" id="input_title" placeholder="Short topic description">
+      </div>
+      <div class="form-group">
+        <label for="input_cat">Category</label>
+        <select class="form-control" id="input_cat"></select>
+      </div>
+      <div class="form-group">
+        <label for="input_text">Contents</label>
+        <textarea rows="10" class="form-control" id="input_text" placeholder="What do you have to say?"></textarea>
+      </div>
+      <div class="form-group" style="margin-top: 25px;">
+        <div class="btn btn-primary float-right" id="input_submit">Confirm & Submit Request</div>
+      </div>
+    </form>
+</div>
+`
+
+    function addPage(identifier, title, contents) {
+        let tab = `<div id="tab-${identifier}" class="nav-button btn btn-dark">${title}</div>`
+        if(contents.includes('{commands}')) {
+            contents = hotkey_template
+        } else if(contents.includes('{contact}')) {
+            contents = parseNormalPage(identifier, contact_template)
+        } else {
+            contents = parseNormalPage(identifier, contents)
+        }
+        $('.nav-buttons').append(() => {
+            return $(tab).click(function() {
+                $('.nav-button').removeClass('selected-page')
+                $(this).addClass('selected-page')
+                $('#page-contents').html(contents).after(() => {
+                    $('.col-sm').css('height', config.settings.page_height)
+                    if(contents.includes('commands-list')) parseConfig()
+                    if(contents.includes('input_cat')) {
+                        for(const label of config.contact.categories) {
+                            $('#input_cat').append(`<option value="${label}">${label}</option>`);
+                        }
+
+                        $('#input_submit').click( function() {
+                            console.log('Doing form submit')
+                            submitForm()
+                        })
+                    }
+                })
+            })
+        })
+    }
+
+    let form_lock = false
+
+    function submitForm() {
+        let error = $('#error')
+        let success = $('#success')
+        error.html('')
+        success.html('')
+
+        if(form_lock) {
+            return error.html(`${config.locale.wait_between} <hr>`)
+        }
+
+        let data = { title: $('#input_title').val(), text: $('#input_text').val(), cat: $('#input_cat').val(), }
+
+        if(!data.title || !data.text || !data.cat) {
+            return error.html(`${config.locale.missing_fields} <hr>`)
+        }
+
+        if(data.title.length > 120) {
+            return error.html(`${config.locale.too_many.replace('{name}', 'title').replace('{amount}', '120')} <hr>`)
+        }
+
+        if(data.text.length > 500) {
+            return error.html(`${config.locale.too_many.replace('{name}', 'content').replace('{amount}', '500')} <hr>`)
+        }
+
+        if(data.title.length < 1) {
+            return error.html(`${config.locale.not_enough.replace('{name}', 'title').replace('{amount}', '10')} <hr>`)
+        }
+
+        if(data.text.length < 1) {
+            return error.html(`${config.locale.not_enough.replace('{name}', 'content').replace('{amount}', '50')} <hr>`)
+        }
+
+        form_lock = true
+        setTimeout(() => {
+            form_lock = false
+        }, 1000 * 60 * config.contact.wait_between_contact_us)
+        fetch(`https://bad_help/submitSupportRequest`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json; charset=UTF-8',},
+            body: JSON.stringify(data)
+        }).then(() => {
+            $('#input_title').val('')
+            $('#input_text').val('')
+            $('#input_cat').val('')
+            return success.html(`${config.locale.submitted} <hr>`)
+        }).catch(r => {
+            $('#input_title').val('')
+            $('#input_text').val('')
+            $('#input_cat').val('')
+            return success.html(`${config.locale.submitted} <hr>`)
+        });
+    }
+
+    function hideInterface() {
+        if(interfaceShowing) escapeInterface();
+        interfaceShowing = false;
+        $('body').hide();
+        $('#commands-list').empty();
+        $('#hotkey-list').empty();
+    }
+
+    function parseConfig() {
+        for (const commandSection of config.commands) {
+            $('#commands-list').append(parseSectionTemplate(commandSection, 'command'));
+            for (const command of commandSection.items) {
+                $(`#section_command_${commandSection.name}`).append(parseCommandTemplate(command));
+            }
+        }
+        for (const hotkeySection of config.hotkeys) {
+            $('#hotkey-list').append(parseSectionTemplate(hotkeySection, 'hotkey'));
+            for (const hotkey of hotkeySection.items) {
+                $(`#section_hotkey_${hotkeySection.name}`).append(parseHotkeyTemplate(hotkey));
+            }
+        }
+    }
+
+    function parseNormalPage(section, contents) {
+        return `
+        <div class="col-sm must-scroll">
+            <div class="normal-section" id="section_normal_${section}">
+               ${contents}
+            </div>
+        </div>`
+    }
+
+    function parseSectionTemplate(section, type) {
+        return `
+        <div class="section" id="section_${type}_${section.name}">
+           <span class="float-right section-title">${section.name}</span>
+        </div>`
+    }
+
+    function parseCommandTemplate(item) {
+        if(!item.args) item.args = '';
+        return `
+        <div class="command" id="command_${item.command}">
+           <span class="command-name">${item.command}</span>
+           <span class="command-args text-muted">${item.args}</span>
+           <span class="command-info text-muted">${item.info}</span>
+        </div>`
+    }
+
+    function parseHotkeyTemplate(item) {
+        if (item.special) {
+            return `
+                <div class="command hotkey" id="hotkey_${item.pressKey}">
+                   <kbd>${item.pressKey}</kbd>
+                   <span class="hotkey-info text-muted">${item.info}</span>
+                   <span class="command-info text-warning">${item.special}</span>
+                </div>`;
+        }
+
+        return `
+        <div class="command hotkey" id="hotkey_${item.pressKey}">
+           <kbd>${item.pressKey}</kbd>
+           <span class="hotkey-info text-muted">${item.info}</span>
+        </div>`;
+    }
+
+
+    function escapeInterface() {
+        fetch(`https://blrp_help/escape`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json; charset=UTF-8',},
+            body: JSON.stringify({})
+        }).then(resp => resp.json()).then(resp => {
+            return resp;
+        });
+    }
+
+    window.addEventListener('message', event => {
+        if(!event.data) return false;
+        if(event.data.type === 'help:toggle') {
+            if (event.data.enable === true) {
+                showInterface();
+            } else if (event.data.enable === false) {
+                hideInterface();
+            }
+        }
+    });
+
+    document.onkeydown = evt => {
+        if(!interfaceShowing) return false;
+        evt = evt || window.event;
+        if (evt.keyCode === 27) hideInterface();
+    };
+</script>
+
+</body>
+</html>
