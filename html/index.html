@@ -161,6 +161,7 @@
     }
 
     function hideInterface() {
+        $('.nav-buttons').html('')
         if(interfaceShowing) escapeInterface();
         interfaceShowing = false;
         $('body').hide();
