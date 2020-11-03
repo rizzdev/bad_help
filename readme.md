@@ -39,6 +39,7 @@ TriggerEvent('bad_help:hide')
 
 ### Configuration Examples
 <details>
+
 #### Pages
 ```javascript
 pages:  [
@@ -117,6 +118,9 @@ https://github.com/rizzdev/bad_help
 ----
 
 #### More Preview Pictures
+<details>
 
 ![image|40%](https://i.imgur.com/Ls8hnGc.png)
 ![image|40%](https://i.imgur.com/mzbrndJ.png)
+
+</details>

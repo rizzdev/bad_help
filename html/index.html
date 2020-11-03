@@ -35,6 +35,7 @@
     }
 
     function createPages() {
+        $('.nav-buttons').html('')
         for(const page of config.pages) {
             if(!page.enabled) continue
             addPage(page.title.replace(/\s/g, '_'), page.title, page.contents)
