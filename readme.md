@@ -38,6 +38,7 @@ TriggerEvent('bad_help:hide')
 ```
 
 ### Configuration Examples
+<details>
 #### Pages
 ```javascript
 pages:  [
@@ -101,16 +102,18 @@ hotkeys: [
     ],
 ```
 
-#### Support System
+#### Locale
 ```javascript
 contact: {
         wait_between_contact_us: 30, // In minutes, prevents spam on a discord server
         categories: ['General Inquiry', 'Player Report', 'Development Feedback']
     },
 ```
+</details>
 
 ## Download
-https://github.com/rizzdev/badhelp
+https://github.com/rizzdev/bad_help
+
 ----
 
 #### More Preview Pictures
