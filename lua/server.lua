@@ -9,7 +9,7 @@ local requests_locks = { }
 RegisterServerEvent('bad_help:submitDiscordRequest')
 AddEventHandler('bad_help:submitDiscordRequest', function(data)
     if requests_locks[source] then
-        print('[ANTI-SPAM] [BADHELP] Source attempted to spam discord requests. Make sure config values match', source)
+        return print('[ANTI-SPAM] [BADHELP] Source attempted to spam discord requests. Make sure config values match', source)
     end
 
     requests_locks[source] = true
