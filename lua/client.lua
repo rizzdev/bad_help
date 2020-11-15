@@ -53,3 +53,7 @@ RegisterNUICallback('submitSupportRequest', function(data, cb)
     TriggerServerEvent('bad_help:submitDiscordRequest', data)
     cb('ok')
 end)
+
+RegisterCommand('help', function(source, args, rawCommand)
+    TriggerEvent('blrp_help:show')
+end, false)

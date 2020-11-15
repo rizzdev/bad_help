@@ -4,8 +4,20 @@
 --- https://github.com/rizzdev/bad_help
 ---
 
+local requests_locks = { }
+
 RegisterServerEvent('bad_help:submitDiscordRequest')
 AddEventHandler('bad_help:submitDiscordRequest', function(data)
+    if requests_locks[source] then
+        print('[ANTI-SPAM] [BADHELP] Source attempted to spam discord requests. Make sure config values match', source)
+    end
+
+    requests_locks[source] = true
+
+    SetTimeout(1000 * 60 * WAIT_BEFORE_CONTACT_US, function()
+        requests_locks[source] = nil
+    end)
+
     if not data then return end
 
     local title = data.title
